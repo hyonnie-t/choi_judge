@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>강화도 천도, 어떻게 볼까?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700;900&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ecdc;
+    --ink:#26201a;
+    --sub:#6d6153;
+    --celadon:#4f7f74;
+    --celadon-dark:#33564d;
+    --celadon-pale:#e4efec;
+    --seal:#b23a2e;
+    --seal-dark:#8c2c22;
+    --line:#d9cdae;
+    --card:#fffdf6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:"Noto Sans KR","Pretendard","Malgun Gothic",sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    font-size:17px;
+    line-height:1.6;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .header{
+    background:linear-gradient(160deg, var(--celadon-dark) 0%, var(--celadon) 100%);
+    color:#fff; padding:24px 20px 22px; text-align:center;
+  }
+  .header .eyebrow{font-size:13px; opacity:.85; font-weight:700;}
+  .header h1{margin:6px 0 4px; font-size:21px; font-weight:900; font-family:"Noto Serif KR",serif;}
+  .header p{margin:0; font-size:13.5px; opacity:.9;}
+
+  .wrap{max-width:640px; margin:0 auto; padding:18px 16px 90px;}
+  .screen{display:none;}
+  .screen.active{display:block; animation:fadeUp .35s ease;}
+  @keyframes fadeUp{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:22px 20px; margin-bottom:16px; box-shadow:0 3px 14px rgba(38,32,26,0.06);
+  }
+  .badge-chip{
+    display:inline-block; background:var(--celadon-pale); color:var(--celadon-dark);
+    font-size:13px; font-weight:800; padding:5px 12px; border-radius:100px; margin-bottom:12px;
+  }
+  h2{font-size:19.5px; margin:0 0 12px; font-weight:900; font-family:"Noto Serif KR",serif; line-height:1.4;}
+  p{margin:0 0 10px;}
+  .sub{color:var(--sub); font-size:14.5px;}
+
+  /* ── 사료 조각 느낌의 요약 카드 ── */
+  .source-card{
+    background:#fbf6e9; border:1px solid #e3d6ad; border-radius:4px;
+    padding:20px 20px 18px; margin-bottom:18px; position:relative;
+    box-shadow:0 2px 10px rgba(38,32,26,0.08);
+  }
+  .source-card::before{
+    content:"史"; position:absolute; top:10px; right:14px; font-size:34px;
+    color:var(--seal); opacity:.18; font-family:"Noto Serif KR",serif; font-weight:900;
+  }
+  .source-card .src-label{font-size:12.5px; font-weight:800; color:var(--seal-dark); letter-spacing:.5px; margin-bottom:8px;}
+  .source-card p{font-size:15px; line-height:1.7;}
+  .source-card .debate-note{
+    margin-top:10px; padding-top:10px; border-top:1px dashed #d8c68e;
+    font-size:14px; color:var(--sub);
+  }
+
+  label{display:block; font-weight:700; font-size:14.5px; margin:14px 0 6px;}
+  input[type=text]{
+    width:100%; padding:14px 16px; font-size:17px;
+    border:2px solid var(--line); border-radius:12px; background:#fffdf9; min-height:48px;
+  }
+  input:focus{outline:none; border-color:var(--celadon);}
+  textarea{
+    width:100%; min-height:130px; padding:14px 16px; font-size:16px;
+    border:2px solid var(--line); border-radius:12px; background:#fffdf9;
+    resize:vertical; font-family:inherit; line-height:1.55;
+  }
+  textarea:focus{outline:none; border-color:var(--celadon);}
+  textarea[readonly]{background:#f7f3e6; color:var(--ink);}
+
+  .btn{
+    display:block; width:100%; padding:15px 20px; font-size:16.5px; font-weight:800;
+    border:none; border-radius:12px; cursor:pointer; min-height:50px; margin-top:14px;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--celadon); color:#fff; box-shadow:0 4px 12px rgba(79,127,116,0.3);}
+  .btn-primary:disabled{background:#c9d6d2; color:#fff; cursor:not-allowed; box-shadow:none;}
+  .btn-outline{background:#fff; color:var(--celadon-dark); border:2px solid var(--celadon);}
+  .btn-seal{background:var(--seal); color:#fff; box-shadow:0 4px 12px rgba(178,58,46,0.3);}
+
+  /* ── 판단 토글 ── */
+  .toggle-row{display:flex; gap:10px; margin:12px 0 4px;}
+  .toggle-btn{
+    flex:1; text-align:center; background:#fff; border:2px solid var(--line); border-radius:14px;
+    padding:16px 10px; font-size:15.5px; font-weight:800; color:var(--ink); cursor:pointer; min-height:56px;
+  }
+  .toggle-btn.selected{border-color:var(--seal); background:#fbeae7; color:var(--seal-dark);}
+
+  .copy-box{
+    background:#f7f3e6; border:1px dashed var(--line); border-radius:12px; padding:14px; margin-top:10px;
+  }
+  .copy-box textarea{background:#fffdf6;}
+
+  .link-btn{
+    display:block; width:100%; text-align:center; padding:14px; margin-top:10px;
+    border-radius:12px; background:var(--celadon-pale); color:var(--celadon-dark);
+    font-weight:800; text-decoration:none; font-size:15px;
+  }
+
+  .teacher-table{width:100%; border-collapse:collapse; font-size:13px;}
+  .teacher-table th, .teacher-table td{border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top;}
+  .teacher-table th{background:var(--celadon-pale);}
+
+  .preview-banner{
+    background:var(--seal); color:#fff; text-align:center; font-size:13px; font-weight:800;
+    padding:8px; position:sticky; top:0; z-index:20;
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-banner" id="previewBanner" style="display:none;">🔍 미리보기 모드 — 제출해도 기록에 안 남아요</div>
+
+<div class="header">
+  <div class="eyebrow">3학년 한국사 · 몽골의 간섭과 고려의 개혁</div>
+  <h1>강화도 천도, 어떻게 볼까?</h1>
+  <p>판단문 쓰기 · 오늘의 판단은 2차시에서 다시 열어볼 거예요</p>
+</div>
+
+<div class="wrap">
+
+  <!-- 화면: 로그인 -->
+  <div class="screen active" id="screen-start">
+    <div class="card">
+      <span class="badge-chip">시작하기</span>
+      <h2>지난 시간, 몽골전쟁 게임을 떠올려보자</h2>
+      <p class="sub">이번엔 게임 없이, 강화도 천도라는 하나의 선택에 대해
+      근거를 가지고 판단하는 글을 써볼 거예요.</p>
+
+      <label>학번</label>
+      <input type="text" id="studentId" inputmode="numeric" placeholder="예: 30501">
+      <label>이름</label>
+      <input type="text" id="studentName" placeholder="이름을 입력하세요">
+
+      <button class="btn btn-primary" id="startBtn" disabled>판단문 쓰러 가기</button>
+    </div>
+  </div>
+
+  <!-- 화면: 판단문 쓰기 -->
+  <div class="screen" id="screen-write">
+    <div class="source-card">
+      <div class="src-label">핵심 사실 요약</div>
+      <p>1232년, 최씨 정권은 수도를 개경에서 강화도로 옮겼어(강화도 천도). 강화도는
+      농사지을 땅이 넉넉해 식량 걱정이 적었고, 물살이 거세 해전에 약한 몽골군이
+      쉽게 접근하기 어려운 곳이었어. 교과서는 이 선택을 <b>'몽골에 맞서기 위한
+      항전 준비'</b>라고 설명해.</p>
+      <div class="debate-note">그런데 이 선택이 정말 항전만을 위한 것이었는지,
+      최씨 정권 자신들의 권력을 지키려는 목적도 있었는지는 역사학자들 사이에서도
+      해석이 갈려. <b>정답은 없어.</b></div>
+    </div>
+
+    <div class="card">
+      <span class="badge-chip">판단하기</span>
+      <h2>나는 강화도 천도가 무엇에 더 가깝다고 볼까?</h2>
+
+      <div class="toggle-row">
+        <button class="toggle-btn" id="toggleA" data-val="권력욕">권력욕</button>
+        <button class="toggle-btn" id="toggleB" data-val="항전 의지">항전 의지</button>
+      </div>
+
+      <label>왜냐하면 —</label>
+      <p class="sub" style="margin-top:-4px;">느낌이나 인상이 아니라, 근거를 들어 써보자.
+      "그냥 그런 것 같아서"는 안 돼요.</p>
+      <textarea id="reasonInput" placeholder="예: 백성들은 산성이나 섬으로 들어가 고생했지만, 최씨 정권은..."></textarea>
+
+      <button class="btn btn-primary" id="submitBtn" disabled>제출하기</button>
+    </div>
+  </div>
+
+  <!-- 화면: 결과/패들렛 복사 -->
+  <div class="screen" id="screen-result">
+    <div class="card">
+      <span class="badge-chip">제출 완료</span>
+      <h2 id="resultGreeting">수고했어요!</h2>
+      <p class="sub">아래 내용을 복사해서 우리 반 패들렛에 붙여넣어 주세요.</p>
+
+      <div class="copy-box">
+        <textarea id="copyText" readonly></textarea>
+        <button class="btn btn-outline" id="copyBtn">복사하기</button>
+      </div>
+
+      <a class="link-btn" id="padletLink" href="#" target="_blank" rel="noopener">우리 반 패들렛 열기</a>
+
+      <p class="sub" style="margin-top:16px;">이 판단은 <b>임시 판단</b>이에요. 2차시(강화·삼별초)
+      수업에서 오늘 쓴 내용을 다시 불러와 이어서 다룰 거예요.</p>
+    </div>
+  </div>
+
+  <!-- 화면: 교사용 대시보드 -->
+  <div class="screen" id="screen-teacher">
+    <div class="card">
+      <span class="badge-chip">교사용</span>
+      <h2>제출 현황</h2>
+      <p class="sub" id="teacherStatus">불러오는 중...</p>
+      <div style="overflow-x:auto;">
+        <table class="teacher-table" id="teacherTable"></table>
+      </div>
+      <button class="btn btn-outline" id="teacherRefreshBtn">새로고침</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+ * CONFIG
+ * ════════════════════════════════════════════════════════ */
+const CONFIG = {
+  SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfFl1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec",
+  GAME_NAME: "choe_regime_judgment",
+  TEACHER_TOKEN: "his26"
+};
+
+/* 3학년 5~8반 패들렛 (기존 링크 재사용) */
+const PADLET_BY_BAN = {
+  5: "https://padlet.com/dy_sch03/2026-2-3-5-cewq8vec8p3ew2yn",
+  6: "https://padlet.com/dy_sch03/2026-2-3-6-2xngg3v8pstkvld9",
+  7: "https://padlet.com/dy_sch03/2026-2-3-7-8ssvnriy75f7xwxs",
+  8: "https://padlet.com/dy_sch03/2026-2-3-8-gsrz2i3ca863675l"
+};
+
+/* 학번에서 반 추출 — 학년(1)+반(2)+번호(2) 형식 가정. 형식이 다르면 이 함수만 수정하면 됨 */
+function parseBan(sid){
+  const digits = String(sid).replace(/\D/g,"");
+  if (digits.length >= 3) return parseInt(digits.substring(1,3), 10);
+  return null;
+}
+
+let studentId = "", studentName = "", judgment = "";
+let PREVIEW = false;
+
+/* ── URL 파라미터 / 모드 분기 ── */
+(function init(){
+  const params = new URLSearchParams(location.search);
+  const sid = params.get("sid") || "";
+  const name = params.get("name") || "";
+  if (sid) document.getElementById("studentId").value = sid;
+  if (name) document.getElementById("studentName").value = name;
+  checkStart();
+
+  if (params.get("preview") === "1") {
+    PREVIEW = true;
+    document.getElementById("previewBanner").style.display = "block";
+    if (!sid) document.getElementById("studentId").value = "preview";
+    if (!name) document.getElementById("studentName").value = "교사미리보기";
+    checkStart();
+  }
+
+  if (params.get("token")) {
+    showScreen("screen-teacher");
+    loadTeacherView(params.get("token"));
+    document.getElementById("teacherRefreshBtn").addEventListener("click", () => loadTeacherView(params.get("token")));
+  }
+})();
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+/* ── 로그인 ── */
+const studentIdEl = document.getElementById("studentId");
+const studentNameEl = document.getElementById("studentName");
+const startBtn = document.getElementById("startBtn");
+function checkStart(){
+  startBtn.disabled = !(studentIdEl.value.trim() && studentNameEl.value.trim());
+}
+[studentIdEl, studentNameEl].forEach(el => el.addEventListener("input", checkStart));
+startBtn.addEventListener("click", () => {
+  studentId = studentIdEl.value.trim();
+  studentName = studentNameEl.value.trim();
+  showScreen("screen-write");
+});
+
+/* ── 판단 토글 ── */
+const toggleA = document.getElementById("toggleA");
+const toggleB = document.getElementById("toggleB");
+const reasonInput = document.getElementById("reasonInput");
+const submitBtn = document.getElementById("submitBtn");
+
+function selectToggle(btn){
+  [toggleA, toggleB].forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+  judgment = btn.dataset.val;
+  checkWrite();
+}
+toggleA.addEventListener("click", () => selectToggle(toggleA));
+toggleB.addEventListener("click", () => selectToggle(toggleB));
+
+function checkWrite(){
+  submitBtn.disabled = !(judgment && reasonInput.value.trim().length >= 15);
+}
+reasonInput.addEventListener("input", checkWrite);
+
+/* ── 제출 ── */
+submitBtn.addEventListener("click", async () => {
+  submitBtn.disabled = true;
+  submitBtn.textContent = "제출 중...";
+
+  const reason = reasonInput.value.trim();
+  const fullText = `최씨정권의 강화도 천도, 나는 (${judgment})에 가깝다고 본다. 왜냐하면 ${reason}`;
+
+  const payload = {
+    gameName: CONFIG.GAME_NAME,
+    studentId: studentId,
+    studentName: studentName,
+    choiceSummary: `판단: ${judgment}`,
+    diffSummary: "",
+    reflection: fullText,
+    choicesJson: JSON.stringify({ judgment, reason })
+  };
+
+  if (!PREVIEW) {
+    try {
+      if (CONFIG.SHEET_WEBAPP_URL && CONFIG.SHEET_WEBAPP_URL.indexOf("http") === 0) {
+        await fetch(CONFIG.SHEET_WEBAPP_URL, { method:"POST", body: JSON.stringify(payload) });
+      }
+    } catch (err) {
+      console.log("전송 실패(콘솔 확인용):", err);
+    }
+  } else {
+    console.log("[미리보기] 실제 전송 안 함:", payload);
+  }
+
+  document.getElementById("resultGreeting").textContent = `${studentName}, 수고했어요!`;
+  document.getElementById("copyText").value = fullText;
+
+  const ban = parseBan(studentId);
+  const link = document.getElementById("padletLink");
+  if (ban && PADLET_BY_BAN[ban]) {
+    link.href = PADLET_BY_BAN[ban];
+    link.style.display = "block";
+  } else {
+    link.style.display = "none";
+  }
+
+  showScreen("screen-result");
+});
+
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const ta = document.getElementById("copyText");
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    const btn = document.getElementById("copyBtn");
+    const orig = btn.textContent;
+    btn.textContent = "복사됐어요!";
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch (err) {
+    ta.select();
+    document.execCommand("copy");
+  }
+});
+
+/* ── 교사용 대시보드 ── */
+async function loadTeacherView(token){
+  const statusEl = document.getElementById("teacherStatus");
+  const tableEl = document.getElementById("teacherTable");
+  statusEl.textContent = "불러오는 중...";
+  try {
+    const url = `${CONFIG.SHEET_WEBAPP_URL}?token=${encodeURIComponent(token)}&game=${encodeURIComponent(CONFIG.GAME_NAME)}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.result === "error") {
+      statusEl.textContent = "인증 실패: " + data.message;
+      tableEl.innerHTML = "";
+      return;
+    }
+    const rows = data.rows || [];
+    statusEl.textContent = `총 ${rows.length}건 제출됨`;
+    tableEl.innerHTML = `<tr><th>학번</th><th>이름</th><th>판단</th><th>서술</th></tr>` +
+      rows.map(r => `<tr><td>${r.studentId||""}</td><td>${r.studentName||""}</td><td>${r.choiceSummary||""}</td><td>${(r.reflection||"").replace(/\n/g,"<br>")}</td></tr>`).join("");
+  } catch (err) {
+    statusEl.textContent = "불러오기 실패: " + err.message;
+  }
+}
+</script>
+
+</body>
+</html>
