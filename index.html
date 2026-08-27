@@ -96,6 +96,18 @@
   .btn-seal{background:var(--seal); color:#fff; box-shadow:0 4px 12px rgba(178,58,46,0.3);}
 
   /* ── 판단 토글 ── */
+  .hint-toggle{
+    display:inline-flex; align-items:center; gap:6px;
+    background:none; border:1px solid var(--line); color:var(--sub);
+    font-size:13px; font-weight:700; padding:8px 14px; border-radius:100px;
+    cursor:pointer; margin:8px 0 0;
+  }
+  .hint-box{
+    display:none; background:#fff8ee; border-radius:12px; padding:12px 14px;
+    font-size:14px; color:var(--sub); margin-top:8px; line-height:1.6;
+  }
+  .hint-box.open{display:block;}
+
   .toggle-row{display:flex; gap:10px; margin:12px 0 4px;}
   .toggle-btn{
     flex:1; text-align:center; background:#fff; border:2px solid var(--line); border-radius:14px;
@@ -113,10 +125,6 @@
     border-radius:12px; background:var(--celadon-pale); color:var(--celadon-dark);
     font-weight:800; text-decoration:none; font-size:15px;
   }
-
-  .teacher-table{width:100%; border-collapse:collapse; font-size:13px;}
-  .teacher-table th, .teacher-table td{border:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top;}
-  .teacher-table th{background:var(--celadon-pale);}
 
   .preview-banner{
     background:var(--seal); color:#fff; text-align:center; font-size:13px; font-weight:800;
@@ -180,6 +188,10 @@
       "그냥 그런 것 같아서"는 안 돼요.</p>
       <textarea id="reasonInput" placeholder="예: 백성들은 산성이나 섬으로 들어가 고생했지만, 최씨 정권은..."></textarea>
 
+      <button class="hint-toggle" id="hintToggle">💡 막막하면 힌트 보기</button>
+      <div class="hint-box" id="hintBox">힌트: 강화도로 옮긴 뒤, 백성들은 산성이나 섬으로 들어가 지냈고
+      최씨 정권은 강화도에 있었어. 두 집단이 각각 어떤 처지에 놓였는지 비교해보면 실마리가 보일 거야.</div>
+
       <button class="btn btn-primary" id="submitBtn" disabled>제출하기</button>
     </div>
   </div>
@@ -203,18 +215,6 @@
     </div>
   </div>
 
-  <!-- 화면: 교사용 대시보드 -->
-  <div class="screen" id="screen-teacher">
-    <div class="card">
-      <span class="badge-chip">교사용</span>
-      <h2>제출 현황</h2>
-      <p class="sub" id="teacherStatus">불러오는 중...</p>
-      <div style="overflow-x:auto;">
-        <table class="teacher-table" id="teacherTable"></table>
-      </div>
-      <button class="btn btn-outline" id="teacherRefreshBtn">새로고침</button>
-    </div>
-  </div>
 
 </div>
 
@@ -224,8 +224,8 @@
  * ════════════════════════════════════════════════════════ */
 const CONFIG = {
   SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfF1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec",
-  GAME_NAME: "choe_regime_judgment",
-  TEACHER_TOKEN: "his26"
+  GAME_NAME: "choe_regime_judgment"
+  // 교사용 제출 현황은 통합 포털 대시보드에서 백엔드(teacherGet_)를 직접 호출해서 보여줌.
 };
 
 /* 3학년 5~8반 패들렛 (기존 링크 재사용) */
@@ -263,12 +263,6 @@ function init(){
     if (!name) document.getElementById("studentName").value = "교사미리보기";
     checkStart();
   }
-
-  if (params.get("token")) {
-    showScreen("screen-teacher");
-    loadTeacherView(params.get("token"));
-    document.getElementById("teacherRefreshBtn").addEventListener("click", () => loadTeacherView(params.get("token")));
-  }
 }
 
 function showScreen(id){
@@ -305,6 +299,10 @@ function selectToggle(btn){
 }
 toggleA.addEventListener("click", () => selectToggle(toggleA));
 toggleB.addEventListener("click", () => selectToggle(toggleB));
+
+document.getElementById("hintToggle").addEventListener("click", () => {
+  document.getElementById("hintBox").classList.toggle("open");
+});
 
 function checkWrite(){
   submitBtn.disabled = !(judgment && reasonInput.value.trim().length >= 15);
@@ -369,29 +367,6 @@ document.getElementById("copyBtn").addEventListener("click", async () => {
     document.execCommand("copy");
   }
 });
-
-/* ── 교사용 대시보드 ── */
-async function loadTeacherView(token){
-  const statusEl = document.getElementById("teacherStatus");
-  const tableEl = document.getElementById("teacherTable");
-  statusEl.textContent = "불러오는 중...";
-  try {
-    const url = `${CONFIG.SHEET_WEBAPP_URL}?token=${encodeURIComponent(token)}&game=${encodeURIComponent(CONFIG.GAME_NAME)}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.result === "error") {
-      statusEl.textContent = "인증 실패: " + data.message;
-      tableEl.innerHTML = "";
-      return;
-    }
-    const rows = data.rows || [];
-    statusEl.textContent = `총 ${rows.length}건 제출됨`;
-    tableEl.innerHTML = `<tr><th>학번</th><th>이름</th><th>판단</th><th>서술</th></tr>` +
-      rows.map(r => `<tr><td>${r.studentId||""}</td><td>${r.studentName||""}</td><td>${r.choiceSummary||""}</td><td>${(r.reflection||"").replace(/\n/g,"<br>")}</td></tr>`).join("");
-  } catch (err) {
-    statusEl.textContent = "불러오기 실패: " + err.message;
-  }
-}
 
 /* ── 진입점: 모든 선언·바인딩이 끝난 뒤 마지막에 실행 ── */
 init();
