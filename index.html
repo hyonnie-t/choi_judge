@@ -223,7 +223,7 @@
  * CONFIG
  * ════════════════════════════════════════════════════════ */
 const CONFIG = {
-  SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfFl1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec",
+  SHEET_WEBAPP_URL: "https://script.google.com/macros/s/AKfycbyXSjCfWY_HiZFqW_OBR-FQDoIfF1z_STqyKWUI31MacHeY3u7hbirFSFDvW-5yuUHaJQ/exec",
   GAME_NAME: "choe_regime_judgment",
   TEACHER_TOKEN: "his26"
 };
@@ -246,8 +246,9 @@ function parseBan(sid){
 let studentId = "", studentName = "", judgment = "";
 let PREVIEW = false;
 
-/* ── URL 파라미터 / 모드 분기 ── */
-(function init(){
+/* ── URL 파라미터 / 모드 분기 ──
+ * 주의: 아래쪽 const(studentIdEl 등) 선언 이후, 스크립트 맨 마지막에 호출해야 함. */
+function init(){
   const params = new URLSearchParams(location.search);
   const sid = params.get("sid") || "";
   const name = params.get("name") || "";
@@ -268,7 +269,7 @@ let PREVIEW = false;
     loadTeacherView(params.get("token"));
     document.getElementById("teacherRefreshBtn").addEventListener("click", () => loadTeacherView(params.get("token")));
   }
-})();
+}
 
 function showScreen(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -391,6 +392,9 @@ async function loadTeacherView(token){
     statusEl.textContent = "불러오기 실패: " + err.message;
   }
 }
+
+/* ── 진입점: 모든 선언·바인딩이 끝난 뒤 마지막에 실행 ── */
+init();
 </script>
 
 </body>
